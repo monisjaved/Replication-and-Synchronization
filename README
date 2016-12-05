@@ -1,0 +1,56 @@
+Run coordinator first 
+eg: python coordinator.py 8888
+
+Then run servers
+eg: python server.py localhost:8888 8003 server3 server3.log
+it will create a log named server3.log in the same directory
+
+the port numbers should be different for all 3 servers
+logs should be named different as well
+eg
+server1 : python server.py localhost:8888 8001 server1 server1.log
+server2 : python server.py localhost:8888 8002 server2 server2.log
+server3 : python server.py localhost:8888 8003 server3 server3.log
+
+then run any number of clients and use menu to make queries
+eg: python client.py localhost:8888 client
+
+
+to check resync open log on any server and remove some lines 
+eg:
+1 101 40
+2 101 10
+3 101 10
+4 101 20
+5 101 30
+6 103 40
+7 103 40
+8 103 40
+9 103 40
+10 101 30 
+
+to 
+
+1 101 40
+2 101 10
+3 101 10
+4 101 20
+
+
+it is important to keep a blank line at the end of the log or it wont work properly
+eg
+'''1 101 40
+2 101 10
+3 101 10
+4 101 20
+5 101 30
+6 103 40
+7 103 40
+8 103 40
+9 103 40
+10 101 30
+
+'''
+
+save log after changing and on the same server terminal press Ctrl+C
+Then reload the log it should be updated
