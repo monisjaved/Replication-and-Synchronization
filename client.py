@@ -1,4 +1,5 @@
 import xmlrpclib
+from xmlrpclib import ServerProxy
 import httplib
 from sys import argv
 
@@ -39,20 +40,6 @@ def balance_check(acnt):
     else:
         print("No such user or account, %s!"%(acnt))
 
-class TimeoutTransport(xmlrpclib.Transport):
-    timeout = 10.0
-    def set_timeout(self, timeout):
-        self.timeout = timeout
-    def make_connection(self, host):
-        h = httplib.HTTPConnection(host, timeout=self.timeout)
-        return h      
-
-class ServerConnection():
-    def __init__(self, address_port):
-        (self.address, self.port_num) = address_port.split(':')
-        self.coordinator = xmlrpclib.ServerProxy(
-            'http://'+self.address+':'+self.port_num,
-            transport=TimeoutTransport())
         
 def main():
     global coordinator
@@ -61,7 +48,7 @@ def main():
             print 'usage: python client.py <coordinator_ip:port number> <client name>'
             exit(0)
 
-        coordinator = ServerConnection(argv[1]).coordinator
+        coordinator = ServerProxy('http://' + argv[1])
         if coordinator.client_hello(argv[2]) == 'FAILURE':
             print 'Error connecting to coordinator'
         while True:

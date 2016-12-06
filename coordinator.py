@@ -1,5 +1,6 @@
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+from xmlrpclib import ServerProxy
 from threading import Thread
 import httplib
 import xmlrpclib
@@ -32,7 +33,7 @@ def deposit(acnt,amt):
     while acnt in account or op_mode != 'NORMAL':
         sleep(5)
     account.append(acnt)
-    for server in server_conns:
+    for server in server_conns.keys():
         # forward request to all servers
         try:
             success_list.append(server_conns[server].deposit(acnt,amt))
@@ -57,7 +58,7 @@ def withdraw(acnt,amt):
     while acnt in account or op_mode != 'NORMAL':
         sleep(5)
     account.append(acnt)
-    for server in server_conns:
+    for server in server_conns.keys():
         # forward request to all servers
         try:
             success_list.append(server_conns[server].withdraw(acnt,amt))
@@ -82,7 +83,7 @@ def balance_check(acnt):
     while acnt in account or op_mode != 'NORMAL':
         sleep(5)
     account.append(acnt)
-    for server in server_conns:
+    for server in server_conns.keys():
         # forward request to all servers
         try:
             success_list.append(server_conns[server].balance_check(acnt))
@@ -119,13 +120,14 @@ def server_hello(server_name,server_ip,port_num,optional_msg = ''):
             # print 'failed after',failed_log_number
             log_data = []
             # get logs from all other servers and forward to serfver
-            for sname,sconn in server_conns.iteritems():
+            for sname in server_conns.keys():
+                sconn = server_conns[sname]
                 if sname != server_name:
                     log_data.append(sconn.get_logs(failed_log_number))
             return log_data
         else:
             # add connection to active connection dictionary
-            server_conns[server_name] =  ServerConnection(str(server_ip)+":"+str(port_num)).server
+            server_conns[server_name] =  ServerProxy('http://' + str(server_ip)+":"+str(port_num))
             # only work if more than 2 servers
             if len(server_conns) >= 2:
                 op_mode = 'NORMAL'
@@ -141,7 +143,7 @@ def resynch_done(server_name,server_ip,port_num):
             server_ip [server ip]
             port_num [port number]'''
     global op_mode
-    server_conns[server_name] =  ServerConnection(str(server_ip)+":"+str(port_num)).server
+    server_conns[server_name] =  ServerProxy('http://' + str(server_ip)+":"+str(port_num))
     op_mode = 'NORMAL'
 
 
@@ -149,9 +151,10 @@ def heartbeat():
     '''heartbeat function to check alive servers at regular intervals'''
     global server_conns
     while True:
-        for sname,sconn in server_conns.iteritems():
+        for sname in server_conns.keys():
             # if ping does not return true then remove from active server dict
             try:
+                sconn = server_conns[sname]
                 if not sconn.ping():
                     del server_conns[sname]
                     # change mode from normal if less than 2 servers
@@ -164,21 +167,6 @@ def heartbeat():
         sleep(10)
 
 
-class TimeoutTransport(xmlrpclib.Transport):
-    timeout = 10.0
-    def set_timeout(self, timeout):
-        self.timeout = timeout
-    def make_connection(self, host):
-        h = httplib.HTTPConnection(host, timeout=self.timeout)
-        return h      
-
-class ServerConnection():
-    def __init__(self, address_port):
-        (self.address, self.port_num) = address_port.split(':')
-        self.server = xmlrpclib.ServerProxy(
-            'http://'+self.address+':'+self.port_num,
-            transport=TimeoutTransport())
-        
 def main():
     global clients
     global servers

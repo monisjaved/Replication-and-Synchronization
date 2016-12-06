@@ -1,5 +1,6 @@
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+from xmlrpclib import ServerProxy
 import httplib
 import xmlrpclib
 from sys import argv
@@ -91,7 +92,8 @@ def resynch(tuple_data):
         for i in xrange(len(tuple_data[0])):
             # iterate through log and if logs from both other servers are same
             # then write it to our log
-            if tuple_data[0][i] == tuple_data[1][i] and len(tuple_data[0][i]) ==3:
+            print tuple_data[0][i],tuple_data[1][i]
+            if tuple_data[0][i] == tuple_data[1][i] and len(tuple_data[0][i]) == 3:
                 log_file_handler.write(" ".join(tuple_data[0][i])+"\n")
                 log_file_handler.flush()
                 op_id,acnt,amt = tuple_data[0][i]
@@ -126,21 +128,6 @@ def get_logs(op_id):
 def ping():
     '''ping command to see if server is alive'''
     return True
-
-class TimeoutTransport(xmlrpclib.Transport):
-    timeout = 10.0
-    def set_timeout(self, timeout):
-        self.timeout = timeout
-    def make_connection(self, host):
-        h = httplib.HTTPConnection(host, timeout=self.timeout)
-        return h      
-
-class ServerConnection():
-    def __init__(self, address_port):
-        (self.address, self.port_num) = address_port.split(':')
-        self.server = xmlrpclib.ServerProxy(
-            'http://'+self.address+':'+self.port_num,
-            transport=TimeoutTransport())
 
         
 def main():
@@ -186,7 +173,7 @@ def main():
 
         # connect to coordinator using server hello
         try:
-            coordinator = ServerConnection(connection).server
+            coordinator = ServerProxy('http://' + connection)
             if alive == 'ALIVE':
                 alive += " " + str(op_ids)
             # get local ip [can be hardcoded for each machine if no internet access]
@@ -200,7 +187,7 @@ def main():
                     coordinator.resynch_done(server_name,server_ip,port_num)
                     alive = ''
         except Exception as e:
-            print 'unable to connect to coordinator'
+            print 'unable to connect to coordinator',e
             exit(0)
 
         # create rpc server to be called by the coordinator and register functions
